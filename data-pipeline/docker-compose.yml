@@ -1,0 +1,76 @@
+version: '3'
+
+x-spark-common: &spark-common
+  image: bitnami/spark:latest
+  volumes:
+    - ./spark/jobs:/opt/bitnami/spark/jobs
+  networks:
+    - pipeline-net
+
+x-airflow-common: &airflow-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  env_file:
+    - airflow.env
+  environment:
+    - MONGO_URL=${MONGO_URL}
+    - MONGO_DB=${MONGO_DB}
+    - MONGO_COLLECTION=${MONGO_COLLECTION}
+    - POSTGRE_JDBC=${POSTGRE_JDBC}
+    - POSTGRE_HOST=${POSTGRE_HOST}
+    - POSTGRE_DBNAME=${POSTGRE_DBNAME}
+    - POSTGRE_TABLE=${POSTGRE_TABLE}
+    - POSTGRE_USER=${POSTGRE_USER}
+    - POSTGRE_PASSWORD=${POSTGRE_PASSWORD}
+  volumes:
+    - ./spark:/opt/airflow/spark
+    - ./dags:/opt/airflow/dags
+    - ./logs:/opt/airflow/logs
+  depends_on:
+    - postgres
+  networks:
+    - pipeline-net
+
+services:
+  spark-master:
+    <<: *spark-common
+    command: bin/spark-class org.apache.spark.deploy.master.Master
+    ports:
+      - "9090:8080"
+      - "7077:7077"
+
+  spark-worker:
+    <<: *spark-common
+    command: bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_MODE: worker
+      SPARK_WORKER_CORES: 2
+      SPARK_WORKER_MEMORY: 1g
+      SPARK_MASTER_URL: spark://spark-master:7077
+
+  postgres:
+    image: postgres:14.0
+    environment:
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=airflow
+      - POSTGRES_DB=airflow
+    networks:
+      - pipeline-net
+
+  webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    depends_on:
+      - scheduler
+
+  scheduler:
+    <<: *airflow-common
+    command: bash -c "airflow db migrate && airflow users create --username admin --firstname etsu --lastname etsu --role Admin --email etsu@gmail.com --password admin && airflow scheduler"
+    
+networks:
+  pipeline-net:

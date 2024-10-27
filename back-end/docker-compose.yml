@@ -1,0 +1,10 @@
+version: '3'
+services:
+  myapp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 9292:9292
+    environment:
+      - POSTGRE_URL=${POSTGRE_URL}

@@ -1,0 +1,28 @@
+version: '3'
+services:
+  celery-worker:
+    build:
+      context: .
+    command: celery -A property_crawler worker -Q crawl_list,crawl_item,io --purge -c 100
+    environment:
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      - MONGO_URL=${MONGO_URL}
+      - MONGO_DB=${MONGO_DB}
+      - MONGO_COLLECTION=${MONGO_COLLECTION}
+      - ROTATING_PROXY_ENDPOINT=${ROTATING_PROXY_ENDPOINT}
+
+  celery-flower:
+    build:
+      context: .
+    command: celery -A property_crawler flower
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND}
+      - MONGO_URL=${MONGO_URL}
+      - MONGO_DB=${MONGO_DB}
+      - MONGO_COLLECTION=${MONGO_COLLECTION}
+      - ROTATING_PROXY_ENDPOINT=${ROTATING_PROXY_ENDPOINT}
+

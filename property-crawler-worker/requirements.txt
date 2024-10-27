@@ -1,0 +1,15 @@
+beautifulsoup4
+boto3
+meilisearch
+Pillow
+pydantic==1.10.11
+pymongo
+celery[redis]
+Celery
+psycopg2-binary
+flower
+random_user_agent
+redis
+pytz
+prisma
+pillow-avif-plugin
